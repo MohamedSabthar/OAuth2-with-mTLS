@@ -1,0 +1,27 @@
+openssl genrsa -out service.key 2048
+openssl req -x509 -new -nodes -key service.key -sha256 -days 1024 -out service.pem
+openssl pkcs12 -export -name service-cert -in service.pem -inkey service.key -out service-keystore.p12
+keytool -importkeystore -destkeystore service.keystore -srckeystore service-keystore.p12 -srcstoretype pkcs12 -alias service-cert
+
+openssl genrsa -out client.key 2048
+openssl req -x509 -new -nodes -key client.key -sha256 -days 1024 -out client.pem
+openssl pkcs12 -export -name client-cert -in client.pem -inkey client.key -out client-keystore.p12
+keytool -importkeystore -destkeystore client.keystore -srckeystore client-keystore.p12 -srcstoretype pkcs12 -alias client-cert
+
+openssl genrsa -out sts.key 2048
+openssl req -x509 -new -nodes -key sts.key -sha256 -days 1024 -out sts.pem
+openssl pkcs12 -export -name sts-cert -in sts.pem -inkey sts.key -out sts-keystore.p12
+keytool -importkeystore -destkeystore sts.keystore -srckeystore sts-keystore.p12 -srcstoretype pkcs12 -alias sts-cert
+
+keytool -import -alias client-cert -file client.pem -keystore service.truststore
+keytool -import -alias sts-cert -file sts.pem -keystore service.truststore
+
+keytool -import -alias servcie-cert -file service.pem -keystore client.truststore
+keytool -import -alias sts-cert -file sts.pem -keystore client.truststore
+
+keytool -import -alias client-cert -file client.pem -keystore sts.truststore
+keytool -import -alias servcie-cert -file service.pem -keystore sts.truststore
+
+keytool -importkeystore -srckeystore service.truststore -srcstoretype JKS -deststoretype PKCS12 -destkeystore service-truststore.p12
+keytool -importkeystore -srckeystore client.truststore -srcstoretype JKS -deststoretype PKCS12 -destkeystore client-truststore.p12
+keytool -importkeystore -srckeystore sts.truststore -srcstoretype JKS -deststoretype PKCS12 -destkeystore sts-truststore.p12
